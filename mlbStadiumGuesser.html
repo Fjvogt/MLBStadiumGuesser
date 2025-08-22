@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device width, initial-scale=1.0">
+    <title>MLB Stadium Guesser</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body{
+            font-family: 'Arial', sans-serif;
+            background:  linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title{
+            color: #2d3748;
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .subtitle{
+            color: #718096;
+            font-size: 1.1em;
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .info-item {
+            text-align: center;
+        }
+        .info-label{
+            color: #718906;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #2d3748;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .target-city {
+            font-size: 2em;
+            color: #4299e1;
+        }
+
+        .strikes {
+            color: #e53e3e;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .guess-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1.1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .guess-input:focus {
+            border-color: #4299e1;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .suggestion {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f7fafc;
+        }
+
+        .suggestion:hover {
+            background: #f7fafc;
+        }
+
+        .suggestion:last-child {
+            border-bottom: none;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .guesses-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #2d3748;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .guess-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .guess-correct {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .guess-incorrect {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .distance {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .game-over {
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .game-won {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .game-lost {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .restart-btn {
+            padding: 10px 20px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 1em;
+        }
+
+        .restart-btn:hover {
+            background: #3182ce;
+        }
+
+        .stadium-info-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stadium-name {
+            font-weight: bold;
+            font-size: 1em;
+            color: inherit;
+        }
+
+        .team-name {
+            font-size: .85em;
+            font-weight: normal;
+            opacity: 0.75;
+            line-height: 1.2;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class ="game-container"> 
+        <div class="header">
+            <h1 class ="title">MLB Stadium Guesser</h1>
+            <p class ="subtitle"> Guess the 5 closest MLB Stadiums to the target city!</p>
+        </div>
+
+        <div class ="game-info">
+            <div class="info-item">
+                <div class="info-label">Target City</div>
+                <div class="info-value target-city" id="targetCity">Loading...</div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Correct Guesses</div>
+                <div class="info-value number-correct" id="correctCount">0/5</div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Strikes</div>
+                <div class="info-value strikes" id="strikeCount">0/3</div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-container">
+                <input type="text" id="guessInput" class="guess-input" placeholder="Make your guess..." autocomplete="off">
+                <div id="suggestions" class="suggestions"></div>
+            </div>
+            <button id="submitGuess" class="submit-btn">Submit Guess</button>
+        </div>
+
+        <div class="guesses-section">
+            <h3 class="section-title">Your Guesses</h3>
+            <div id="guessList"></div>
+        </div>
+
+        <div id="gameOver" class="game-over" style="display: none;">
+            <h2 id="gameOverTitle"></h2>
+            <p id="gameOverMessage"></p>
+            <button id="restartBtn" class="restart-btn">Play Again</button>
+        </div>
+
+    </div>
+
+    <script>
+
+        const MLB_STADIUMS = [
+            { name: "Angel Stadium", team: "Los Angeles Angels", lat: 33.8003, lng: -117.8827 },
+            { name: "Busch Stadium", team: "St. Louis Cardinals", lat: 38.6226, lng: -90.1928 },
+            { name: "Chase Field", team: "Arizona Diamondbacks", lat: 33.4455, lng: -112.0667 },
+            { name: "Citi Field", team: "New York Mets", lat: 40.7571, lng: -73.8458 },
+            { name: "Citizens Bank Park", team: "Philadelphia Phillies", lat: 39.9061, lng: -75.1665 },
+            { name: "Comerica Park", team: "Detroit Tigers", lat: 42.3390, lng: -83.0485 },
+            { name: "Coors Field", team: "Colorado Rockies", lat: 39.7559, lng: -104.9942 },
+            { name: "Dodger Stadium", team: "Los Angeles Dodgers", lat: 34.0739, lng: -118.2400 },
+            { name: "Fenway Park", team: "Boston Red Sox", lat: 42.3467, lng: -71.0972 },
+            { name: "Globe Life Field", team: "Texas Rangers", lat: 32.7513, lng: -97.0824 },
+            { name: "Great American Ball Park", team: "Cincinnati Reds", lat: 39.0979, lng: -84.5082 },
+            { name: "Guaranteed Rate Field", team: "Chicago White Sox", lat: 41.8299, lng: -87.6338 },
+            { name: "Kauffman Stadium", team: "Kansas City Royals", lat: 39.0517, lng: -94.4803 },
+            { name: "Marlins Park", team: "Miami Marlins", lat: 25.7783, lng: -80.2196 },
+            { name: "Miller Park", team: "Milwaukee Brewers", lat: 43.0282, lng: -87.9712 },
+            { name: "Minute Maid Park", team: "Houston Astros", lat: 29.7573, lng: -95.3555 },
+            { name: "Nationals Park", team: "Washington Nationals", lat: 38.8730, lng: -77.0074 },
+            { name: "Oakland Coliseum", team: "Oakland Athletics", lat: 37.7516, lng: -122.2005 },
+            { name: "Oracle Park", team: "San Francisco Giants", lat: 37.7786, lng: -122.3893 },
+            { name: "Oriole Park at Camden Yards", team: "Baltimore Orioles", lat: 39.2841, lng: -76.6215 },
+            { name: "Petco Park", team: "San Diego Padres", lat: 32.7077, lng: -117.1569 },
+            { name: "PNC Park", team: "Pittsburgh Pirates", lat: 40.4469, lng: -80.0057 },
+            { name: "Progressive Field", team: "Cleveland Guardians", lat: 41.4962, lng: -81.6852 },
+            { name: "Rogers Centre", team: "Toronto Blue Jays", lat: 43.6414, lng: -79.3894 },
+            { name: "T-Mobile Park", team: "Seattle Mariners", lat: 47.5914, lng: -122.3325 },
+            { name: "Target Field", team: "Minnesota Twins", lat: 44.9817, lng: -93.2775 },
+            { name: "Truist Park", team: "Atlanta Braves", lat: 33.8907, lng: -84.4678 },
+            { name: "Tropicana Field", team: "Tampa Bay Rays", lat: 27.7682, lng: -82.6534 },
+            { name: "Wrigley Field", team: "Chicago Cubs", lat: 41.9484, lng: -87.6553 },
+            { name: "Yankee Stadium", team: "New York Yankees", lat: 40.8296, lng: -73.9262 }
+        ];
+
+        const CITIES = [
+            { name: "Charlotte, NC", lat: 35.2271, lng: -80.8431 },
+            { name: "Birmingham, AL", lat: 33.5163, lng: -86.8135}, 
+            { name: "Tuscaloosa, AL", lat: 33.2093, lng: -87.5646}, 
+            { name: "Albers, IL", lat: 38.5464, lng: -89.6125},
+            { name: "New Orleans, LA", lat: 29.9511, lng: -90.0812},
+            { name: "Albuquerque, NM", lat: 35.0906, lng: -106.6218},
+            { name: "Salt Lake City, UT", lat: 40.7600, lng: -111.8846},
+            { name: "Las Vegas, NV", lat: 36.1802, lng: -115.1344},
+            { name: "Eugene, OR", lat: 44.0583, lng: -123.0684},
+            { name: "Missoula, MT", lat: 46.8600, lng: -113.9852},
+            { name: "Cheyenne, WY", lat: 41.1396, lng: -104.8179},
+            { name: "Fargo, ND", lat: 46.8784, lnt: -96.7840},
+            { name: "Marquette, MI", lat: 46.5426, lng: -87.3927},
+            { name: "Burlington, VT", lat: 44.4765, lng: -73.2135},
+            { name: "Charleston, SC", lat: 32.7770, lng: -79.9305},
+            { name: "Savannah, GA", lat: 32.0773, lng: -81.0900},
+            { name: "Mobile, AL", lat: 30.6897, lng: -88.0400},
+            { name: "Jackson, MS", lat: 32.3016, lng: -90.1778},
+            { name: "Champaign, IL", lat: 40.1075, lng: -88.2272},
+            { name: "Columbia, MO", lat: 38.9359, lng: -92.3332},
+            { name: "Fayetteville, AR", lat: 36.0681, lng: -94.1789},
+            { name: "Oklahoma City, OK", lat: 35.4651, lng: -97.5077},
+            { name: "Boise, ID", lat: 43.6139, lng: -116.2028},
+            { name: "Morgantown, WV", lat: 39.6307, lng: -79.9553},
+            { name: "Louisville, KY", lat: 38.2573, lng: -85.7637}
+        ]
+
+
+        let numStrikes = 0;
+        let gameOver = false;
+        let currentCity = null;
+        let closestStadiums = [];
+        let correctGuesses = [];
+        let incorrectGuesses = [];
+
+
+        function calculateDistance(lat1, lng1, lat2, lng2){
+            const R = 3963.17; // Radius of earth
+            const radLat1 = lat1 * (Math.PI / 180);
+            const radLng1 = lng1 * (Math.PI / 180);
+            const radLat2 = lat2 * (Math.PI / 180);
+            const radLng2 = lng2 * (Math.PI / 180);
+            const distance = R * Math.acos(Math.sin(radLat1) * Math.sin(radLat2) + Math.cos(radLat1) * Math.cos(radLat2) * Math.cos(radLng1-radLng2));
+            return distance;
+        }
+
+        function initGame(){
+            correctGuesses = [];
+            incorrectGuesses = [];
+            allGuesses = [];
+            numStrikes = 0;
+            gameOver = false;
+
+            currentCity = CITIES[Math.floor(Math.random() * CITIES.length)];
+
+            const stadiumDistances = MLB_STADIUMS.map(stadium => ({
+                ...stadium,
+                distance : calculateDistance(currentCity.lat, currentCity.lng, stadium.lat, stadium.lng)
+            }));
+
+            closestStadiums = stadiumDistances
+                .sort((a,b) => a.distance - b.distance)
+                .slice(0, 5);
+
+            updateUI();
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('guessInput').value = '';
+            document.getElementById('guessList').innerHTML = '';
+        }
+
+        function updateUI(){
+            document.getElementById('targetCity').textContent = currentCity.name;
+            document.getElementById('correctCount').textContent = `${correctGuesses.length}/5`;
+            document.getElementById('strikeCount').textContent = `${numStrikes}/3`;
+
+            const input = document.getElementById('guessInput');
+            const submitBtn = document.getElementById('submitGuess');
+
+            if(gameOver){
+                input.disabled = true;
+                submitBtn.disabled = true;
+            }
+            else{
+                input.disabled = false;
+                submitBtn.disabled = false;
+            }
+
+        }
+
+        function submitGuess() {
+            if(gameOver) return;
+
+            const input = document.getElementById('guessInput');
+            const guess = input.value.trim();
+
+            if (!guess) return;
+
+            const validStadium = MLB_STADIUMS.find(stadium => 
+                stadium.name.toLowerCase() === guess.toLowerCase()
+            );
+
+            if(!validStadium){
+                alert("Please enter a valid stadium name!");
+                input.value = '';
+                return;
+            }
+
+            const alreadyGuessed = (correctGuesses.some(stadium =>
+                stadium.toLowerCase() === guess.toLowerCase()
+            ) || incorrectGuesses.some(stadium =>
+                stadium.toLowerCase() === guess.toLowerCase()
+            ));
+
+            if(alreadyGuessed){
+                alert("You already guessed that stadium!");
+                input.value = '';
+                return;
+            }
+
+            const stadiumMatch = closestStadiums.find(stadium => stadium.name.toLowerCase() === guess.toLowerCase());
+            if (stadiumMatch && !correctGuesses.includes(stadiumMatch.name)) {
+
+                correctGuesses.push(stadiumMatch.name);
+                addGuessToList(stadiumMatch.name, stadiumMatch.team, stadiumMatch.distance, true);
+
+                if(correctGuesses.length === 5) {
+                    endGame(true);
+                }
+            }
+            else {
+                numStrikes++;
+                incorrectGuesses.push(guess);
+                const incorrectGuessDistance = calculateDistance(validStadium.lat, validStadium.lng, currentCity.lat, currentCity.lng);
+                addGuessToList(validStadium.name, validStadium.team, incorrectGuessDistance, false);
+
+                if(numStrikes >= 3){
+                    endGame(false);
+                }
+            }
+            input.value = '';
+            updateUI();
+        }
+
+        let allGuesses = [];
+
+        function addGuessToList(stadium, teamName, distance, isCorrect){
+            const guessData = {
+                stadium: stadium,
+                teamName: teamName,
+                distance: distance,
+                isCorrect: isCorrect,
+            };
+            allGuesses.push(guessData);
+
+            displaySortedGuesses();
+        }
+
+        function displaySortedGuesses(){
+            const guessList = document.getElementById('guessList');
+            guessList.innerHTML = '';
+
+            const sortedGuesses = allGuesses.sort((a,b) => a.distance - b.distance);
+
+            sortedGuesses.forEach(guess => {
+                const guessItem = document.createElement('div');
+                guessItem.className = `guess-item ${guess.isCorrect ? 'guess-correct' : 'guess-incorrect'}`;
+
+                const infoWrapper = document.createElement('div');
+                infoWrapper.className = 'stadium-info-wrapper';
+
+                const stadiumNameElement = document.createElement('span');
+                stadiumNameElement.className = 'stadium-name';
+                stadiumNameElement.textContent = guess.stadium;
+
+                const teamNameElement = document.createElement('span');
+                teamNameElement.className = 'team-name';
+                teamNameElement.textContent = guess.teamName;
+
+                infoWrapper.appendChild(stadiumNameElement);
+                infoWrapper.appendChild(teamNameElement);
+
+                const distanceSpan = document.createElement('span');
+                distanceSpan.className = 'distance';
+            
+                if(guess.isCorrect && guess.distance){
+                    distanceSpan.textContent = `${Math.round(guess.distance)} miles`;
+                }
+                else if(!guess.isCorrect){
+                    distanceSpan.textContent = `Strike! ${Math.round(guess.distance)} miles`;
+                }
+
+                guessItem.appendChild(infoWrapper);
+                guessItem.appendChild(distanceSpan);
+                guessList.appendChild(guessItem);
+        });
+    }
+
+        function endGame(won){
+            gameOver = true;
+            updateUI();
+
+            const gameOverDiv = document.getElementById('gameOver');
+            const title = document.getElementById('gameOverTitle');
+            const message = document.getElementById('gameOverMessage');
+            
+            if(won){
+                gameOverDiv.className = 'game-over game-won';
+                title.textContent = 'Congratulations!';
+                message.textContent = `You found all 5 closest stadiums to ${currentCity.name}!`;
+            }
+            else{
+                gameOverDiv.className = 'game-over game-lost';
+                title.textContent = 'Game Over';
+                message.innerHTML = `You struck out! The closest stadiums to ${currentCity.name} were:<br><br>` + 
+                    closestStadiums.map(stadium => 
+                        `${stadium.name} - ${stadium.team} (${Math.round(stadium.distance)} miles)`
+                    ).join('<br>');
+            }
+
+            gameOverDiv.style.display = 'block';
+        }
+
+        function setupAutocomplete() {
+            const input = document.getElementById('guessInput');
+            const suggestions = document.getElementById('suggestions');
+
+            input.addEventListener('input', function(){
+                const value = this.value.toLowerCase();
+                suggestions.innerHTML = '';
+                if(value.length > 0){
+                    const matches = MLB_STADIUMS.filter(stadium =>
+                        stadium.name.toLowerCase().includes(value) || 
+                        stadium.team.toLowerCase().includes(value)
+                    )//.slice(0,5);
+
+                    if (matches.length > 0){
+                        matches.forEach(stadium => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion';
+                            div.textContent = stadium.name + " - " + stadium.team;
+                            div.addEventListener('click', () =>{
+                                input.value = stadium.name;
+                                suggestions.style.display = 'none';
+                            });
+                            suggestions.appendChild(div);
+                        });
+                        suggestions.style.display = 'block';
+                    } else{
+                        suggestions.style.display = 'none';
+                    }
+                } else{
+                    suggestions.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('click', function(e){
+                if(!input.contains(e.target) && !suggestions.contains(e.target)){
+                    suggestions.style.display = 'none';
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            initGame();
+            setupAutocomplete();
+
+            document.getElementById('submitGuess').addEventListener('click', submitGuess);
+            document.getElementById('restartBtn').addEventListener('click', initGame);
+
+            document.getElementById('guessInput').addEventListener('keypress', function(e){
+                if(e.key === 'Enter'){
+                    submitGuess();
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
