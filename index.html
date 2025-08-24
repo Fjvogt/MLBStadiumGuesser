@@ -209,7 +209,75 @@
             opacity: 0.8;
         }
 
-        .game-over {
+        .modal-overlay{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show{
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.8) translateY(-50px);
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-content.game-won {
+            border: 4px solid #48bb78;
+        }
+
+        .modal-content.game-lost {
+            border: 4px solid #e53e3e;
+        }
+
+        .modal-title {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .modal-title.won {
+            color: #22543d;
+        }
+
+        .modal-title.lost {
+            color: #742a2a;
+        }
+
+        .modal-message {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+
+        /* .game-over {
             text-align: center;
             padding: 30px;
             border-radius: 15px;
@@ -224,7 +292,7 @@
         .game-lost {
             background: #fed7d7;
             color: #742a2a;
-        }
+        } */
 
         .restart-btn {
             padding: 10px 20px;
@@ -239,6 +307,30 @@
 
         .restart-btn:hover {
             background: #3182ce;
+        }
+
+        #newGameButtonContainer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        #newGameBtn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #newGameBtn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #38a169, #2f855a);
         }
 
         .stadium-info-wrapper {
@@ -298,13 +390,24 @@
         <div class="guesses-section">
             <h3 class="section-title">Your Guesses</h3>
             <div id="guessList"></div>
+            <div id="newGameButtonContainer" style="display: none;">
+                <button id="newGameBtn" class="restart-btn">Start New Game</button>
+            </div>
         </div>
 
-        <div id="gameOver" class="game-over" style="display: none;">
+        <div id="gameOverModal" class="modal-overlay">
+            <div id="modalContent" class="modal-content">
+                <h2 id="modalTitle" class="modal-title"></h2>
+                <div id="modalMessage" class="modal-message"></div>
+                <button id="restartBtn" class="restart-btn">Play Again</button>
+            </div>
+        </div>
+
+        <!-- <div id="gameOver" class="game-over" style="display: none;">
             <h2 id="gameOverTitle"></h2>
             <p id="gameOverMessage"></p>
             <button id="restartBtn" class="restart-btn">Play Again</button>
-        </div>
+        </div> -->
 
     </div>
 
@@ -409,9 +512,11 @@
                 .slice(0, 5);
 
             updateUI();
-            document.getElementById('gameOver').style.display = 'none';
+            hideModal();
+            // document.getElementById('gameOver').style.display = 'none';
             document.getElementById('guessInput').value = '';
             document.getElementById('guessList').innerHTML = '';
+            document.getElementById('newGameButtonContainer').style.display = 'none';
         }
 
         function updateUI(){
@@ -541,29 +646,44 @@
         });
     }
 
+        function showModal(){
+            const modal = document.getElementById('gameOverModal');
+            modal.classList.add('show');
+        }
+
+        function hideModal(){
+            const modal = document.getElementById('gameOverModal');
+            modal.classList.remove('show');
+        }
+
         function endGame(won){
             gameOver = true;
             updateUI();
 
-            const gameOverDiv = document.getElementById('gameOver');
-            const title = document.getElementById('gameOverTitle');
-            const message = document.getElementById('gameOverMessage');
+            const modalContent = document.getElementById('modalContent');
+            const title = document.getElementById('modalTitle');
+            const message = document.getElementById('modalMessage');
             
             if(won){
-                gameOverDiv.className = 'game-over game-won';
+                modalContent.className = 'modal-content game-won';
+                title.className = 'modal-title won';
                 title.textContent = 'Congratulations!';
-                message.textContent = `You found all 5 closest stadiums to ${currentCity.name}!`;
+                message.innerHTML = `You found all 5 closest stadiums to <strong>${currentCity.name}</strong>!`;
             }
             else{
-                gameOverDiv.className = 'game-over game-lost';
+                modalContent.className = 'modal-content game-lost';
+                title.className = 'modal-title lost';
                 title.textContent = 'Game Over';
-                message.innerHTML = `You struck out! The closest stadiums to ${currentCity.name} were:<br><br>` + 
-                    closestStadiums.map(stadium => 
-                        `${stadium.name} - ${stadium.team} (${Math.round(stadium.distance)} miles)`
-                    ).join('<br>');
+
+                const stadiumListHtml = closestStadiums.map(stadium => 
+                    `<strong>${stadium.name}</strong> - ${stadium.team}<br><em>${Math.round(stadium.distance)} miles</em>`
+                ).join('<br>');
+
+                message.innerHTML = `You struck out! The 5 closest stadiums to <strong>${currentCity.name}</strong> were:<br><br><div class="stadium-list">${stadiumListHtml}</div>`;
             }
 
-            gameOverDiv.style.display = 'block';
+            showModal();
+            document.getElementById('newGameButtonContainer').style.display = 'block';
         }
 
         function setupAutocomplete() {
@@ -606,12 +726,27 @@
             });
         }
 
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape'){
+                hideModal();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('gameOverModal');
+            const modalContent = document.getElementById('modalContent');
+            if(e.target === modal && !modalContent.contains(e.target)){
+                hideModal();
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function(){
             initGame();
             setupAutocomplete();
 
             document.getElementById('submitGuess').addEventListener('click', submitGuess);
             document.getElementById('restartBtn').addEventListener('click', initGame);
+            document.getElementById('newGameBtn').addEventListener('click', initGame);
 
             document.getElementById('guessInput').addEventListener('keypress', function(e){
                 if(e.key === 'Enter'){
